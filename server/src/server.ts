@@ -23,9 +23,9 @@ function text(value: unknown, isError = false) {
 }
 
 /** Runs a guarded call and turns any failure into an MCP error result. */
-function handle<T>(run: () => T) {
+async function handle<T>(run: () => Promise<T>) {
   try {
-    return text(run());
+    return text(await run());
   } catch (err) {
     return text({ error: err instanceof Error ? err.message : String(err) }, true);
   }
@@ -50,8 +50,8 @@ export function createServer(ctx: CallContext): McpServer {
     },
     (args) =>
       handle(() =>
-        guardedCall(ctx, "add_application", args, () => ({
-          result: addApplication(ctx.db, ctx.userId, args),
+        guardedCall(ctx, "add_application", args, async () => ({
+          result: await addApplication(ctx.db, ctx.userId, args),
         })),
       ),
   );
@@ -65,8 +65,8 @@ export function createServer(ctx: CallContext): McpServer {
     },
     (args) =>
       handle(() =>
-        guardedCall(ctx, "update_status", args, () => {
-          const { before, after } = updateStatus(ctx.db, ctx.userId, args.id, args.status);
+        guardedCall(ctx, "update_status", args, async () => {
+          const { before, after } = await updateStatus(ctx.db, ctx.userId, args.id, args.status);
           return { result: after, before, after };
         }),
       ),
@@ -85,8 +85,8 @@ export function createServer(ctx: CallContext): McpServer {
     },
     (args) =>
       handle(() =>
-        guardedCall(ctx, "list_applications", args, () => ({
-          result: listApplications(ctx.db, ctx.userId, args),
+        guardedCall(ctx, "list_applications", args, async () => ({
+          result: await listApplications(ctx.db, ctx.userId, args),
         })),
       ),
   );
@@ -103,8 +103,8 @@ export function createServer(ctx: CallContext): McpServer {
     },
     (args) =>
       handle(() =>
-        guardedCall(ctx, "upcoming_followups", args, () => ({
-          result: upcomingFollowups(
+        guardedCall(ctx, "upcoming_followups", args, async () => ({
+          result: await upcomingFollowups(
             ctx.db,
             ctx.userId,
             args.today ?? new Date().toISOString().slice(0, 10),
@@ -125,8 +125,8 @@ export function createServer(ctx: CallContext): McpServer {
     },
     (args) =>
       handle(() =>
-        guardedCall(ctx, "add_note", args, () => ({
-          result: addNote(ctx.db, ctx.userId, args.id, args.notes),
+        guardedCall(ctx, "add_note", args, async () => ({
+          result: await addNote(ctx.db, ctx.userId, args.id, args.notes),
         })),
       ),
   );
@@ -145,8 +145,8 @@ export function createServer(ctx: CallContext): McpServer {
     },
     (args) =>
       handle(() =>
-        guardedCall(ctx, "add_contact", args, () => ({
-          result: addContact(ctx.db, ctx.userId, args.id, {
+        guardedCall(ctx, "add_contact", args, async () => ({
+          result: await addContact(ctx.db, ctx.userId, args.id, {
             name: args.name,
             role: args.role,
             email: args.email,
@@ -165,9 +165,9 @@ export function createServer(ctx: CallContext): McpServer {
     },
     (args) =>
       handle(() =>
-        guardedCall(ctx, "draft_followup", args, () => {
-          const app = getApplication(ctx.db, ctx.userId, args.id);
-          const contacts = contactsFor(ctx.db, ctx.userId, args.id);
+        guardedCall(ctx, "draft_followup", args, async () => {
+          const app = await getApplication(ctx.db, ctx.userId, args.id);
+          const contacts = await contactsFor(ctx.db, ctx.userId, args.id);
           return { result: draftFollowup(app, contacts) };
         }),
       ),
@@ -181,8 +181,8 @@ export function createServer(ctx: CallContext): McpServer {
     },
     (args) =>
       handle(() =>
-        guardedCall(ctx, "get_application", args, () => ({
-          result: getApplication(ctx.db, ctx.userId, args.id),
+        guardedCall(ctx, "get_application", args, async () => ({
+          result: await getApplication(ctx.db, ctx.userId, args.id),
         })),
       ),
   );

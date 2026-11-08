@@ -1,11 +1,15 @@
-import Database from "better-sqlite3";
-import { resolve } from "node:path";
+import { Pool } from "pg";
+
+let pool: Pool | undefined;
 
 /**
- * Opens the pipeline database read-only. The dashboard never writes to it,
- * and SQLite enforces that even if code tries to.
+ * Connects as a read-only Postgres role. The dashboard never writes, and the
+ * database refuses writes from this role even if code tries to.
  */
-export function openReadOnlyDb(): Database.Database {
-  const path = process.env.PIPELINE_DB ?? resolve(process.cwd(), "../server/data/pipeline.db");
-  return new Database(path, { readonly: true, fileMustExist: true });
+export function getDashboardPool(): Pool {
+  if (!process.env.DASHBOARD_DATABASE_URL) {
+    throw new Error("DASHBOARD_DATABASE_URL is not set");
+  }
+  pool ??= new Pool({ connectionString: process.env.DASHBOARD_DATABASE_URL });
+  return pool;
 }

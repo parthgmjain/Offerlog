@@ -37,7 +37,7 @@ Every tool call writes one row to the `audit_log` table with:
 - the decision (allowed or denied) and the rule that made it
 - the before and after values for changes
 
-The table is append-only. SQLite triggers reject any `UPDATE` or `DELETE` on it.
+The table is append-only. Postgres triggers reject any `UPDATE`, `DELETE`, or `TRUNCATE` on it.
 
 ## Setup
 
@@ -50,23 +50,33 @@ You need Node.js 20 or newer and npm.
    npm install
    ```
 
-2. Create the policy file from the example, and the folder for the database:
+2. Start Postgres and create the databases. On macOS with Homebrew:
+
+   ```bash
+   brew install postgresql@16
+   brew services start postgresql@16
+   createdb pipeline
+   createdb pipeline_test
+   ```
+
+   The server creates its tables the first time it starts. `pipeline_test` is used only by the tests.
+
+3. Create the policy file from the example:
 
    ```bash
    cp config/policy.example.json config/policy.json
-   mkdir -p data
    ```
 
-   `config/policy.json` and `data/` are gitignored, so your local settings and data stay on your machine.
+   `config/policy.json` is gitignored, so your local settings stay on your machine.
 
-3. Run the tests to check the setup:
+4. Run the tests to check the setup:
 
    ```bash
    npm test
    npm run typecheck
    ```
 
-4. Connect it to Claude Desktop. Find the full path to `npx` with `which npx`, then add this to `~/Library/Application Support/Claude/claude_desktop_config.json`. Replace the paths with your own:
+5. Connect it to Claude Desktop. Find the full path to `npx` with `which npx`, then add this to `~/Library/Application Support/Claude/claude_desktop_config.json`. Replace the paths with your own:
 
    ```json
    {
@@ -77,14 +87,14 @@ You need Node.js 20 or newer and npm.
          "env": {
            "PIPELINE_CLIENT_ID": "claude-desktop",
            "PIPELINE_POLICY": "/full/path/to/Pipeline/server/config/policy.json",
-           "PIPELINE_DB": "/full/path/to/Pipeline/server/data/pipeline.db"
+           "DATABASE_URL": "postgres://localhost:5432/pipeline"
          }
        }
      }
    }
    ```
 
-5. Fully quit Claude Desktop with Cmd+Q, then reopen it. The tools appear once it starts. Claude Desktop only loads tools at startup, so a restart is needed after any change to the server's tools.
+6. Fully quit Claude Desktop with Cmd+Q, then reopen it. The tools appear once it starts. Claude Desktop only loads tools at startup, so a restart is needed after any change to the server's tools.
 
 ### Environment variables
 
@@ -92,7 +102,7 @@ You need Node.js 20 or newer and npm.
 |----------|----------|---------|---------|
 | `PIPELINE_CLIENT_ID` | Yes | none | Which policy entry applies to this connection |
 | `PIPELINE_POLICY` | No | `config/policy.json` | Path to the policy file |
-| `PIPELINE_DB` | No | `data/pipeline.db` | Path to the SQLite database |
+| `DATABASE_URL` | No | `postgres://localhost:5432/pipeline` | Postgres connection string for the server |
 | `PIPELINE_USER_ID` | No | `default` | Owner of the data. Rows from other user IDs are invisible. |
 
 ## Project layout
@@ -110,14 +120,28 @@ Pipeline/
     │   ├── audit.ts          Append-only audit log and redaction
     │   ├── applications.ts   Application data access
     │   ├── status.ts         Status transition rules
-    │   └── db.ts             SQLite schema
+    │   └── db.ts             Postgres connection and schema
     ├── test/                 Vitest tests for tools, policy, audit, and status
     └── config/policy.example.json
 ```
 
 ## Audit log dashboard
 
-A read-only Next.js page that shows the audit log, newest first, with a filter for allowed or denied calls. It reads the same SQLite database as the server and opens it read-only.
+A read-only Next.js page that shows the audit log, newest first, with a filter for allowed or denied calls. It connects to the same Postgres database as the server, but as a role that can only read the audit log.
+
+Create that role once, after the server has started at least once:
+
+```bash
+psql pipeline -c "CREATE ROLE pipeline_dashboard LOGIN PASSWORD 'choose-a-password';" -c "GRANT CONNECT ON DATABASE pipeline TO pipeline_dashboard;" -c "GRANT USAGE ON SCHEMA public TO pipeline_dashboard;" -c "GRANT SELECT ON audit_log TO pipeline_dashboard;"
+```
+
+Put the connection string in `dashboard/.env.local`, which is gitignored:
+
+```
+DASHBOARD_DATABASE_URL=postgres://pipeline_dashboard:choose-a-password@localhost:5432/pipeline
+```
+
+Then run it:
 
 ```bash
 cd dashboard
@@ -137,7 +161,7 @@ Design decisions and their reasons are in [docs/DECISIONS.md](docs/DECISIONS.md)
 
 ## Status and roadmap
 
-This is a working local version. It runs on SQLite and only works on one machine.
+This is a working local version. It runs on Postgres on one machine.
 
 Not built yet:
 

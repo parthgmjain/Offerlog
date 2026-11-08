@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { listAuditRows, type AuditRow, type Decision } from "@/lib/audit";
-import { openReadOnlyDb } from "@/lib/db";
+import { getDashboardPool } from "@/lib/db";
 
 function parseDecision(value: string | string[] | undefined): Decision | undefined {
   return value === "allowed" || value === "denied" ? value : undefined;
@@ -42,13 +42,7 @@ export default function AuditPage({ searchParams }: PageProps<"/audit">) {
 async function AuditList({ searchParams }: { searchParams: Promise<{ decision?: string | string[] }> }) {
   const decision = parseDecision((await searchParams).decision);
 
-  const db = openReadOnlyDb();
-  let rows: AuditRow[];
-  try {
-    rows = listAuditRows(db, { decision });
-  } finally {
-    db.close();
-  }
+  const rows: AuditRow[] = await listAuditRows(getDashboardPool(), { decision });
 
   return (
     <>

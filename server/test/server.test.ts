@@ -3,13 +3,13 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { Db } from "../src/db.js";
 import { createServer } from "../src/server.js";
-import { memoryDb, testPolicy } from "./helpers.js";
+import { freshDb, testPolicy } from "./helpers.js";
 
 let db: Db;
-beforeEach(() => {
-  db = memoryDb();
+beforeEach(async () => {
+  db = await freshDb();
 });
-afterEach(() => db.close());
+afterEach(() => db.end());
 
 async function connect(clientId: string) {
   const server = createServer({ db, policy: testPolicy, clientId, userId: "u1" });
@@ -61,8 +61,8 @@ describe("MCP server end to end", () => {
     });
     expect(denied.isError).toBe(true);
     expect(textOf(denied)).toContain("policy denies reader");
-    const log = db.prepare("SELECT decision, rule_id FROM audit_log").all();
-    expect(log).toEqual([{ decision: "denied", rule_id: "reader/default-deny" }]);
+    const log = await db.query("SELECT decision, rule_id FROM audit_log");
+    expect(log.rows).toEqual([{ decision: "denied", rule_id: "reader/default-deny" }]);
     await close();
   });
 

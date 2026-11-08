@@ -32,16 +32,19 @@ export interface ApplicationFilters {
   to?: string;
 }
 
-export function addApplication(db: Db, userId: string, input: NewApplication): Application {
+export async function addApplication(
+  db: Db,
+  userId: string,
+  input: NewApplication,
+): Promise<Application> {
   const now = new Date().toISOString();
-  const info = db
-    .prepare(
-      `INSERT INTO applications
-         (user_id, company, role, link, date_applied, resume_version,
-          cover_letter_version, status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-    .run(
+  const { rows } = await db.query<{ id: number }>(
+    `INSERT INTO applications
+       (user_id, company, role, link, date_applied, resume_version,
+        cover_letter_version, status, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+     RETURNING id`,
+    [
       userId,
       input.company,
       input.role,
@@ -52,65 +55,66 @@ export function addApplication(db: Db, userId: string, input: NewApplication): A
       input.status,
       now,
       now,
-    );
-  return getApplication(db, userId, Number(info.lastInsertRowid));
+    ],
+  );
+  return getApplication(db, userId, rows[0].id);
 }
 
-export function getApplication(db: Db, userId: string, id: number): Application {
-  const row = db
-    .prepare(`SELECT * FROM applications WHERE id = ? AND user_id = ?`)
-    .get(id, userId) as Application | undefined;
-  if (!row) {
+export async function getApplication(db: Db, userId: string, id: number): Promise<Application> {
+  const { rows } = await db.query<Application>(
+    `SELECT * FROM applications WHERE id = $1 AND user_id = $2`,
+    [id, userId],
+  );
+  if (rows.length === 0) {
     throw new Error(`application ${id} not found`);
   }
-  return row;
+  return rows[0];
 }
 
-export function listApplications(
+export async function listApplications(
   db: Db,
   userId: string,
   filters: ApplicationFilters = {},
-): Application[] {
-  const clauses = ["user_id = ?"];
+): Promise<Application[]> {
+  const clauses = ["user_id = $1"];
   const params: unknown[] = [userId];
   if (filters.status) {
-    clauses.push("status = ?");
     params.push(filters.status);
+    clauses.push(`status = $${params.length}`);
   }
   if (filters.company) {
-    clauses.push("company LIKE ?");
     params.push(`%${filters.company}%`);
+    clauses.push(`company ILIKE $${params.length}`);
   }
   if (filters.from) {
-    clauses.push("date_applied >= ?");
     params.push(filters.from);
+    clauses.push(`date_applied >= $${params.length}`);
   }
   if (filters.to) {
-    clauses.push("date_applied <= ?");
     params.push(filters.to);
+    clauses.push(`date_applied <= $${params.length}`);
   }
-  return db
-    .prepare(
-      `SELECT * FROM applications WHERE ${clauses.join(" AND ")} ORDER BY date_applied DESC, id DESC`,
-    )
-    .all(...params) as Application[];
+  const { rows } = await db.query<Application>(
+    `SELECT * FROM applications WHERE ${clauses.join(" AND ")} ORDER BY date_applied DESC, id DESC`,
+    params,
+  );
+  return rows;
 }
 
 /** Applications still at `applied` whose application date is at least `days` before `today`. */
-export function upcomingFollowups(
+export async function upcomingFollowups(
   db: Db,
   userId: string,
   today: string,
   days: number,
-): Application[] {
-  const cutoff = shiftDate(today, -days);
-  return db
-    .prepare(
-      `SELECT * FROM applications
-       WHERE user_id = ? AND status = 'applied' AND date_applied <= ?
-       ORDER BY date_applied ASC, id ASC`,
-    )
-    .all(userId, cutoff) as Application[];
+): Promise<Application[]> {
+  const { rows } = await db.query<Application>(
+    `SELECT * FROM applications
+     WHERE user_id = $1 AND status = 'applied' AND date_applied <= $2
+     ORDER BY date_applied ASC, id ASC`,
+    [userId, shiftDate(today, -days)],
+  );
+  return rows;
 }
 
 function shiftDate(date: string, days: number): string {
@@ -119,18 +123,19 @@ function shiftDate(date: string, days: number): string {
   return shifted.toISOString().slice(0, 10);
 }
 
-export function updateStatus(
+export async function updateStatus(
   db: Db,
   userId: string,
   id: number,
   to: Status,
-): { before: Application; after: Application } {
-  const before = getApplication(db, userId, id);
+): Promise<{ before: Application; after: Application }> {
+  const before = await getApplication(db, userId, id);
   if (!canTransition(before.status, to)) {
     throw new Error(`cannot move application ${id} from ${before.status} to ${to}`);
   }
-  db.prepare(
-    `UPDATE applications SET status = ?, updated_at = ? WHERE id = ? AND user_id = ?`,
-  ).run(to, new Date().toISOString(), id, userId);
-  return { before, after: getApplication(db, userId, id) };
+  await db.query(
+    `UPDATE applications SET status = $1, updated_at = $2 WHERE id = $3 AND user_id = $4`,
+    [to, new Date().toISOString(), id, userId],
+  );
+  return { before, after: await getApplication(db, userId, id) };
 }

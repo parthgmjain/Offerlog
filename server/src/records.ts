@@ -28,27 +28,32 @@ export interface NewContact {
 }
 
 /** Throws if the application does not exist or belongs to another user. */
-export function addNote(db: Db, userId: string, applicationId: number, body: string): Note {
-  getApplication(db, userId, applicationId);
-  const info = db
-    .prepare(`INSERT INTO notes (user_id, application_id, body, created_at) VALUES (?, ?, ?, ?)`)
-    .run(userId, applicationId, body, new Date().toISOString());
-  return db.prepare(`SELECT * FROM notes WHERE id = ?`).get(Number(info.lastInsertRowid)) as Note;
+export async function addNote(
+  db: Db,
+  userId: string,
+  applicationId: number,
+  body: string,
+): Promise<Note> {
+  await getApplication(db, userId, applicationId);
+  const { rows } = await db.query<Note>(
+    `INSERT INTO notes (user_id, application_id, body, created_at)
+     VALUES ($1, $2, $3, $4) RETURNING *`,
+    [userId, applicationId, body, new Date().toISOString()],
+  );
+  return rows[0];
 }
 
-export function addContact(
+export async function addContact(
   db: Db,
   userId: string,
   applicationId: number,
   input: NewContact,
-): Contact {
-  getApplication(db, userId, applicationId);
-  const info = db
-    .prepare(
-      `INSERT INTO contacts (user_id, application_id, name, role, email, phone, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    )
-    .run(
+): Promise<Contact> {
+  await getApplication(db, userId, applicationId);
+  const { rows } = await db.query<Contact>(
+    `INSERT INTO contacts (user_id, application_id, name, role, email, phone, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+    [
       userId,
       applicationId,
       input.name,
@@ -56,12 +61,15 @@ export function addContact(
       input.email ?? null,
       input.phone ?? null,
       new Date().toISOString(),
-    );
-  return db.prepare(`SELECT * FROM contacts WHERE id = ?`).get(Number(info.lastInsertRowid)) as Contact;
+    ],
+  );
+  return rows[0];
 }
 
-export function contactsFor(db: Db, userId: string, applicationId: number): Contact[] {
-  return db
-    .prepare(`SELECT * FROM contacts WHERE user_id = ? AND application_id = ? ORDER BY id ASC`)
-    .all(userId, applicationId) as Contact[];
+export async function contactsFor(db: Db, userId: string, applicationId: number): Promise<Contact[]> {
+  const { rows } = await db.query<Contact>(
+    `SELECT * FROM contacts WHERE user_id = $1 AND application_id = $2 ORDER BY id ASC`,
+    [userId, applicationId],
+  );
+  return rows;
 }

@@ -12,7 +12,7 @@ Decisions for the MVP (phases 1–2 of [CLAUDE.md](../CLAUDE.md)). Each entry sa
 
 | # | Area | Decision |
 |---|------|----------|
-| 1 | Database | SQLite (`better-sqlite3`) for MVP. Postgres at deploy time. |
+| 1 | Database | Postgres 16. Installed with Homebrew locally, hosted provider when deployed. Replaces the SQLite MVP. |
 | 2 | Auth provider | Deferred. Auth0 free tier when login exists. |
 | 3 | MFA | Deferred. Enable in Auth0 rather than build it. |
 | 4 | Transport | stdio for MVP. HTTP at deploy time. |
@@ -20,7 +20,7 @@ Decisions for the MVP (phases 1–2 of [CLAUDE.md](../CLAUDE.md)). Each entry sa
 | 6 | Client identity | Named client ID set in the MCP server config (`PIPELINE_CLIENT_ID`). API keys at deploy time. |
 | 7 | Hosting | None yet. Later: one small host for server and dashboard. |
 | 8 | Repo layout | One repo. `server/` now, `dashboard/` later. |
-| 9 | Tooling | TypeScript, npm, Vitest, `better-sqlite3` with plain SQL. No ORM. |
+| 9 | Tooling | TypeScript, npm, Vitest, `pg` with plain SQL. No ORM. |
 | 10 | Dashboard | Next.js App Router, later. Shared types live in the server package. |
 | 11 | Status model | Order: `applied` → `interviewing` → `offer`. Any non-terminal status may move to `rejected` or `withdrawn`. `rejected` and `withdrawn` are terminal. No backward moves. |
 | 12 | Follow-up rule | Default 7 days after `applied` with no status change. Configurable parameter. (Tool is post-MVP.) |

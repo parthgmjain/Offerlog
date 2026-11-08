@@ -28,20 +28,21 @@ export interface AuditEntry {
   after?: unknown;
 }
 
-export function writeAudit(db: Db, entry: AuditEntry): void {
-  db.prepare(
+export async function writeAudit(db: Db, entry: AuditEntry): Promise<void> {
+  await db.query(
     `INSERT INTO audit_log
        (user_id, ts, client_id, tool, arguments, decision, rule_id, before_state, after_state)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(
-    entry.userId,
-    new Date().toISOString(),
-    entry.clientId,
-    entry.tool,
-    JSON.stringify(redact(entry.args)),
-    entry.decision,
-    entry.ruleId,
-    entry.before === undefined ? null : JSON.stringify(redact(entry.before)),
-    entry.after === undefined ? null : JSON.stringify(redact(entry.after)),
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [
+      entry.userId,
+      new Date().toISOString(),
+      entry.clientId,
+      entry.tool,
+      JSON.stringify(redact(entry.args)),
+      entry.decision,
+      entry.ruleId,
+      entry.before === undefined ? null : JSON.stringify(redact(entry.before)),
+      entry.after === undefined ? null : JSON.stringify(redact(entry.after)),
+    ],
   );
 }

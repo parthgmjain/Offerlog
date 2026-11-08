@@ -1,5 +1,5 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { openDb } from "./db.js";
+import { migrate, openDb } from "./db.js";
 import { loadPolicy } from "./policy.js";
 import { createServer } from "./server.js";
 
@@ -9,7 +9,8 @@ if (!clientId) {
   process.exit(1);
 }
 
-const db = openDb(process.env.PIPELINE_DB ?? "data/pipeline.db");
+const db = openDb(process.env.DATABASE_URL ?? "postgres://localhost:5432/pipeline");
+await migrate(db);
 const policy = loadPolicy(process.env.PIPELINE_POLICY ?? "config/policy.json");
 const userId = process.env.PIPELINE_USER_ID ?? "default";
 

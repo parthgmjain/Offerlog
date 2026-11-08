@@ -1,4 +1,4 @@
-import type Database from "better-sqlite3";
+import type { Pool } from "pg";
 
 export type Decision = "allowed" | "denied";
 
@@ -16,13 +16,20 @@ export interface AuditRow {
 }
 
 /** Newest first. Optionally limited to one decision. */
-export function listAuditRows(
-  db: Database.Database,
+export async function listAuditRows(
+  pool: Pool,
   options: { decision?: Decision; limit?: number } = {},
-): AuditRow[] {
-  const where = options.decision ? "WHERE decision = ?" : "";
-  const params: unknown[] = options.decision ? [options.decision] : [];
-  return db
-    .prepare(`SELECT * FROM audit_log ${where} ORDER BY id DESC LIMIT ?`)
-    .all(...params, options.limit ?? 200) as AuditRow[];
+): Promise<AuditRow[]> {
+  const params: unknown[] = [];
+  let where = "";
+  if (options.decision) {
+    params.push(options.decision);
+    where = `WHERE decision = $${params.length}`;
+  }
+  params.push(options.limit ?? 200);
+  const { rows } = await pool.query<AuditRow>(
+    `SELECT * FROM audit_log ${where} ORDER BY id DESC LIMIT $${params.length}`,
+    params,
+  );
+  return rows;
 }

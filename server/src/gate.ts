@@ -26,12 +26,12 @@ export interface ActionResult<T> {
  * Every tool call goes through here. The policy is checked before the action
  * runs. Denied calls and allowed calls are both written to the audit log.
  */
-export function guardedCall<T>(
+export async function guardedCall<T>(
   ctx: CallContext,
   tool: string,
   args: unknown,
-  action: () => ActionResult<T>,
-): T {
+  action: () => Promise<ActionResult<T>>,
+): Promise<T> {
   const decision = decide(ctx.policy, ctx.clientId, tool);
   const base = {
     userId: ctx.userId,
@@ -42,17 +42,23 @@ export function guardedCall<T>(
   };
 
   if (!decision.allowed) {
-    writeAudit(ctx.db, { ...base, decision: "denied" });
+    await writeAudit(ctx.db, { ...base, decision: "denied" });
     throw new PolicyDeniedError(tool, ctx.clientId);
   }
 
+  let outcome: ActionResult<T>;
   try {
-    const { result, before, after } = action();
-    writeAudit(ctx.db, { ...base, decision: "allowed", before, after });
-    return result;
+    outcome = await action();
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    writeAudit(ctx.db, { ...base, decision: "allowed", after: { error: message } });
+    await writeAudit(ctx.db, { ...base, decision: "allowed", after: { error: message } });
     throw err;
   }
+  await writeAudit(ctx.db, {
+    ...base,
+    decision: "allowed",
+    before: outcome.before,
+    after: outcome.after,
+  });
+  return outcome.result;
 }
