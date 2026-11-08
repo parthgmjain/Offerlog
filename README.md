@@ -1,5 +1,7 @@
 # Pipeline
 
+![Scripted demo: tool calls, a denied call, and the redacted audit log](docs/demo.gif)
+
 Pipeline is an MCP server that lets an AI agent help me manage my job search. The agent can log applications, update their status, and list the ones that need a follow-up. Every tool call goes through a policy check first, and every call is recorded in an audit log. The agent can't delete anything, and it can't send messages or contact anyone on my behalf.
 
 ## Why I built it
