@@ -5,6 +5,7 @@ import {
   getApplication,
   listApplications,
   updateStatus,
+  upcomingFollowups,
 } from "./applications.js";
 import { guardedCall, type CallContext } from "./gate.js";
 import { STATUSES } from "./status.js";
@@ -84,6 +85,29 @@ export function createServer(ctx: CallContext): McpServer {
       handle(() =>
         guardedCall(ctx, "list_applications", args, () => ({
           result: listApplications(ctx.db, ctx.userId, args),
+        })),
+      ),
+  );
+
+  server.registerTool(
+    "upcoming_followups",
+    {
+      description:
+        "List applications still at 'applied' that are at least N days old, so you can follow up. Defaults to 7 days.",
+      inputSchema: {
+        days: z.number().int().min(1).max(365).default(7),
+        today: isoDate.optional(),
+      },
+    },
+    (args) =>
+      handle(() =>
+        guardedCall(ctx, "upcoming_followups", args, () => ({
+          result: upcomingFollowups(
+            ctx.db,
+            ctx.userId,
+            args.today ?? new Date().toISOString().slice(0, 10),
+            args.days,
+          ),
         })),
       ),
   );

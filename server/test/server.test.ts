@@ -25,11 +25,11 @@ function textOf(result: unknown): string {
 }
 
 describe("MCP server end to end", () => {
-  it("lists all four tools", async () => {
+  it("lists all five tools", async () => {
     const { client, close } = await connect("writer");
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual(
-      ["add_application", "get_application", "list_applications", "update_status"],
+      ["add_application", "get_application", "list_applications", "upcoming_followups", "update_status"],
     );
     await close();
   });

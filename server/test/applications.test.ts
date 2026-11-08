@@ -5,6 +5,7 @@ import {
   getApplication,
   listApplications,
   updateStatus,
+  upcomingFollowups,
 } from "../src/applications.js";
 import { memoryDb } from "./helpers.js";
 
@@ -60,5 +61,33 @@ describe("applications", () => {
     expect(listApplications(db, "u2")).toEqual([]);
     expect(() => getApplication(db, "u2", app.id)).toThrow(/not found/);
     expect(() => updateStatus(db, "u2", app.id, "rejected")).toThrow(/not found/);
+  });
+
+  describe("upcomingFollowups", () => {
+    it("returns applied applications at least N days old, including exactly N", () => {
+      addApplication(db, "u1", { ...base, company: "Old", date_applied: "2026-10-01" });
+      addApplication(db, "u1", { ...base, company: "Edge", date_applied: "2026-10-08" });
+      addApplication(db, "u1", { ...base, company: "Recent", date_applied: "2026-10-09" });
+
+      const due = upcomingFollowups(db, "u1", "2026-10-15", 7);
+      expect(due.map((a) => a.company)).toEqual(["Old", "Edge"]);
+    });
+
+    it("excludes applications that already moved past applied", () => {
+      const app = addApplication(db, "u1", { ...base, company: "Replied", date_applied: "2026-10-01" });
+      updateStatus(db, "u1", app.id, "interviewing");
+      expect(upcomingFollowups(db, "u1", "2026-10-15", 7)).toEqual([]);
+    });
+
+    it("counts days across a month boundary", () => {
+      addApplication(db, "u1", { ...base, company: "Late Oct", date_applied: "2026-10-27" });
+      expect(upcomingFollowups(db, "u1", "2026-11-03", 7).map((a) => a.company)).toEqual(["Late Oct"]);
+      expect(upcomingFollowups(db, "u1", "2026-11-02", 7)).toEqual([]);
+    });
+
+    it("keeps users' data separate", () => {
+      addApplication(db, "u1", { ...base, date_applied: "2026-10-01" });
+      expect(upcomingFollowups(db, "u2", "2026-10-15", 7)).toEqual([]);
+    });
   });
 });

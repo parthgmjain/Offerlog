@@ -96,6 +96,29 @@ export function listApplications(
     .all(...params) as Application[];
 }
 
+/** Applications still at `applied` whose application date is at least `days` before `today`. */
+export function upcomingFollowups(
+  db: Db,
+  userId: string,
+  today: string,
+  days: number,
+): Application[] {
+  const cutoff = shiftDate(today, -days);
+  return db
+    .prepare(
+      `SELECT * FROM applications
+       WHERE user_id = ? AND status = 'applied' AND date_applied <= ?
+       ORDER BY date_applied ASC, id ASC`,
+    )
+    .all(userId, cutoff) as Application[];
+}
+
+function shiftDate(date: string, days: number): string {
+  const shifted = new Date(`${date}T00:00:00Z`);
+  shifted.setUTCDate(shifted.getUTCDate() + days);
+  return shifted.toISOString().slice(0, 10);
+}
+
 export function updateStatus(
   db: Db,
   userId: string,
