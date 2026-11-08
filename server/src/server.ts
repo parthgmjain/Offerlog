@@ -8,6 +8,8 @@ import {
   upcomingFollowups,
 } from "./applications.js";
 import { guardedCall, type CallContext } from "./gate.js";
+import { draftFollowup } from "./followup.js";
+import { addContact, addNote, contactsFor } from "./records.js";
 import { STATUSES } from "./status.js";
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "use YYYY-MM-DD");
@@ -109,6 +111,65 @@ export function createServer(ctx: CallContext): McpServer {
             args.days,
           ),
         })),
+      ),
+  );
+
+  server.registerTool(
+    "add_note",
+    {
+      description: "Attach a note to an application.",
+      inputSchema: {
+        id: z.number().int().positive(),
+        notes: z.string().min(1).max(5000),
+      },
+    },
+    (args) =>
+      handle(() =>
+        guardedCall(ctx, "add_note", args, () => ({
+          result: addNote(ctx.db, ctx.userId, args.id, args.notes),
+        })),
+      ),
+  );
+
+  server.registerTool(
+    "add_contact",
+    {
+      description: "Attach a recruiter or referral contact to an application.",
+      inputSchema: {
+        id: z.number().int().positive(),
+        name: z.string().min(1),
+        role: z.string().optional(),
+        email: z.string().email().optional(),
+        phone: z.string().optional(),
+      },
+    },
+    (args) =>
+      handle(() =>
+        guardedCall(ctx, "add_contact", args, () => ({
+          result: addContact(ctx.db, ctx.userId, args.id, {
+            name: args.name,
+            role: args.role,
+            email: args.email,
+            phone: args.phone,
+          }),
+        })),
+      ),
+  );
+
+  server.registerTool(
+    "draft_followup",
+    {
+      description:
+        "Return a follow-up email draft for an application. Never sends anything; the user copies and sends it.",
+      inputSchema: { id: z.number().int().positive() },
+    },
+    (args) =>
+      handle(() =>
+        guardedCall(ctx, "draft_followup", args, () => {
+          const app = getApplication(ctx.db, ctx.userId, args.id);
+          const contacts = contactsFor(ctx.db, ctx.userId, args.id);
+          return { result: draftFollowup(app, contacts) };
+        }),
       ),
   );
 

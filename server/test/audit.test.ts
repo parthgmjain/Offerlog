@@ -32,9 +32,10 @@ describe("audit log", () => {
   });
 
   it("redacts sensitive fields in arguments and state", () => {
-    expect(redact({ company: "Acme", email: "a@b.c", nested: { phone: "555", notes: "hi" } })).toEqual({
+    expect(redact({ company: "Acme", email: "a@b.c", name: "Jordan Lee", nested: { phone: "555", notes: "hi" } })).toEqual({
       company: "Acme",
       email: "[redacted]",
+      name: "[redacted]",
       nested: { phone: "[redacted]", notes: "[redacted]" },
     });
   });

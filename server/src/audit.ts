@@ -1,7 +1,7 @@
 import type { Db } from "./db.js";
 
 /** Fields whose values are replaced before anything reaches the audit log. */
-export const SENSITIVE_FIELDS = new Set(["email", "phone", "notes"]);
+export const SENSITIVE_FIELDS = new Set(["email", "phone", "notes", "name"]);
 
 export function redact(value: unknown): unknown {
   if (Array.isArray(value)) {

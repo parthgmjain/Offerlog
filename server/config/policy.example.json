@@ -2,13 +2,13 @@
   "clients": {
     "claude-desktop": {
       "rules": [
-        { "id": "read", "tools": ["list_applications", "get_application", "upcoming_followups"] },
-        { "id": "write", "tools": ["add_application", "update_status"] }
+        { "id": "read", "tools": ["list_applications", "get_application", "upcoming_followups", "draft_followup"] },
+        { "id": "write", "tools": ["add_application", "update_status", "add_note", "add_contact"] }
       ]
     },
     "read-only-demo": {
       "rules": [
-        { "id": "read", "tools": ["list_applications", "get_application", "upcoming_followups"] }
+        { "id": "read", "tools": ["list_applications", "get_application", "upcoming_followups", "draft_followup"] }
       ]
     }
   }

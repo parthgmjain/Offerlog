@@ -15,6 +15,9 @@ Tracking dozens of applications across job sites, notes, and spreadsheets gets m
 | `list_applications` | List applications, filtered by status, company, or date range |
 | `get_application` | Show full details for one application |
 | `upcoming_followups` | List applications still at `applied` that are at least N days old (default 7) |
+| `add_note` | Attach a note to an application. The note text is redacted in the audit log. |
+| `add_contact` | Attach a recruiter or referral contact. The name, email, and phone are redacted in the audit log. |
+| `draft_followup` | Return a follow-up email draft from a fixed template. It never sends anything. |
 
 ## How permissions work
 
@@ -136,7 +139,5 @@ This is a working local version. It runs on SQLite and only works on one machine
 
 Not built yet:
 
-- `add_note` and `add_contact`
-- `draft_followup`, which returns a template-based draft and never sends anything
 - Postgres, Auth0 login with MFA, and deployment to a public host
 - A demo GIF

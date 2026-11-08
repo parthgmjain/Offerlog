@@ -27,7 +27,7 @@ Decisions for the MVP (phases 1–2 of [CLAUDE.md](../CLAUDE.md)). Each entry sa
 | 13 | `draft_followup` | Templates, not an LLM. (Tool is post-MVP.) |
 | 14 | Resume/cover letter | Plain text version label (e.g. `resume v3`). No file storage. |
 | 15 | Contacts | Separate table with a foreign key to the application. (Post-MVP.) |
-| 16 | Sensitive fields | Redacted in audit arguments: `email`, `phone`, `notes`. Extend the list as fields are added. |
+| 16 | Sensitive fields | Redacted in audit arguments: `email`, `phone`, `notes`, `name`. Note and contact text is passed only in redacted fields, and results are never written to the audit log. Extend the list as fields are added. |
 | 17 | Rule identity | Each rule has an ID, recorded as `<client>/<rule>` in every audit row. |
 | 18 | Denied calls | Return a clear error to the agent and log the denial. No rate limiting yet. |
 | 19 | Append-only | Enforced by SQL triggers that reject `UPDATE` and `DELETE` on `audit_log`, plus no code path that writes them. |
