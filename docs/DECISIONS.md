@@ -13,8 +13,8 @@ Decisions for the MVP (phases 1–2 of [CLAUDE.md](../CLAUDE.md)). Each entry sa
 | # | Area | Decision |
 |---|------|----------|
 | 1 | Database | Postgres 16. Installed with Homebrew locally, hosted provider when deployed. Replaces the SQLite MVP. |
-| 2 | Auth provider | Deferred. Auth0 free tier when login exists. |
-| 3 | MFA | Deferred. Enable in Auth0 rather than build it. |
+| 2 | Auth provider | Auth0 free tier (up to 25,000 monthly active users). Development tenant created. |
+| 3 | MFA | Skipped for now, against CLAUDE.md. MFA needs a paid Auth0 plan, which waits until launch is paid. Must be enabled before any user other than the owner logs in. |
 | 4 | Transport | stdio for MVP. HTTP at deploy time. |
 | 5 | Policy format | JSON file. Per client: named rules, each listing allowed tools. Moves to DB only if the dashboard edits policies. |
 | 6 | Client identity | Named client ID set in the MCP server config (`PIPELINE_CLIENT_ID`). API keys at deploy time. |

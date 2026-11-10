@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { auth0 } from "@/lib/auth0";
 import { listAuditRows, type AuditRow, type Decision } from "@/lib/audit";
 import { getDashboardPool } from "@/lib/db";
 
@@ -30,6 +32,9 @@ export default function AuditPage({ searchParams }: PageProps<"/audit">) {
         <p className="mt-1 text-sm text-zinc-600">
           Every tool call made against the job tracker, newest first. This page is read-only.
         </p>
+        <a href="/auth/logout" className="mt-2 inline-block text-sm text-zinc-600 underline">
+          Sign out
+        </a>
       </header>
 
       <Suspense fallback={<p className="text-sm text-zinc-500">Loading audit log…</p>}>
@@ -40,6 +45,11 @@ export default function AuditPage({ searchParams }: PageProps<"/audit">) {
 }
 
 async function AuditList({ searchParams }: { searchParams: Promise<{ decision?: string | string[] }> }) {
+  const session = await auth0.getSession();
+  if (!session) {
+    redirect("/auth/login");
+  }
+
   const decision = parseDecision((await searchParams).decision);
 
   const rows: AuditRow[] = await listAuditRows(getDashboardPool(), { decision });
