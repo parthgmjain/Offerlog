@@ -76,7 +76,21 @@ You need Node.js 20 or newer and npm.
    npm run typecheck
    ```
 
-5. Connect it to Claude Desktop. Find the full path to `npx` with `which npx`, then add this to `~/Library/Application Support/Claude/claude_desktop_config.json`. Replace the paths with your own:
+5. Connect Claude Desktop to the hosted server. This is the easiest way:
+
+   1. Create an API key on your dashboard's **API keys** page. The key is shown once, so keep the page open.
+   2. Fully quit Claude Desktop with Cmd+Q.
+   3. From the repository root, run:
+
+      ```bash
+      ./scripts/connect-claude.sh
+      ```
+
+      The script asks for your key with the input hidden, saves a backup of your Claude Desktop config, and adds the `pipeline` entry. It needs Node.js, which you already have if you ran the steps above.
+
+   4. Reopen Claude Desktop and start a new chat. The tools appear once it starts.
+
+   To run the server on your own machine instead, use this entry in `~/Library/Application Support/Claude/claude_desktop_config.json`. Find the full path to `npx` with `which npx`, and replace the paths with your own:
 
    ```json
    {
