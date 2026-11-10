@@ -15,16 +15,19 @@ export interface AuditRow {
   after_state: string | null;
 }
 
-/** Newest first. Optionally limited to one decision. */
+/**
+ * Newest first, only rows owned by `userId`. Rows from other users are never
+ * returned, so a logged-in user can't see anyone else's activity.
+ */
 export async function listAuditRows(
   pool: Pool,
-  options: { decision?: Decision; limit?: number } = {},
+  options: { userId: string; decision?: Decision; limit?: number },
 ): Promise<AuditRow[]> {
-  const params: unknown[] = [];
-  let where = "";
+  const params: unknown[] = [options.userId];
+  let where = "WHERE user_id = $1";
   if (options.decision) {
     params.push(options.decision);
-    where = `WHERE decision = $${params.length}`;
+    where += ` AND decision = $${params.length}`;
   }
   params.push(options.limit ?? 200);
   const { rows } = await pool.query<AuditRow>(

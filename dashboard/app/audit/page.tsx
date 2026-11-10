@@ -32,9 +32,10 @@ export default function AuditPage({ searchParams }: PageProps<"/audit">) {
         <p className="mt-1 text-sm text-zinc-600">
           Every tool call made against the job tracker, newest first. This page is read-only.
         </p>
-        <a href="/auth/logout" className="mt-2 inline-block text-sm text-zinc-600 underline">
-          Sign out
-        </a>
+        <nav className="mt-2 flex gap-4 text-sm text-zinc-600">
+          <Link href="/keys" className="underline">API keys</Link>
+          <a href="/auth/logout" className="underline">Sign out</a>
+        </nav>
       </header>
 
       <Suspense fallback={<p className="text-sm text-zinc-500">Loading audit log…</p>}>
@@ -52,7 +53,10 @@ async function AuditList({ searchParams }: { searchParams: Promise<{ decision?: 
 
   const decision = parseDecision((await searchParams).decision);
 
-  const rows: AuditRow[] = await listAuditRows(getDashboardPool(), { decision });
+  const rows: AuditRow[] = await listAuditRows(getDashboardPool(), {
+    userId: session.user.sub,
+    decision,
+  });
 
   return (
     <>
