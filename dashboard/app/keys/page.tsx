@@ -17,6 +17,7 @@ export default function KeysPage() {
         </p>
         <nav className="mt-2 flex gap-4 text-sm text-zinc-600">
           <Link href="/audit" className="underline">Audit log</Link>
+          <Link href="/setup" className="underline">Setup guide</Link>
           <a href="/auth/logout" className="underline">Sign out</a>
         </nav>
       </header>
