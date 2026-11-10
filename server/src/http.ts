@@ -40,6 +40,11 @@ function readBody(req: IncomingMessage): Promise<unknown> {
  */
 export function createHttpApp({ db, policy }: HttpOptions): Server {
   return createHttpServer(async (req, res) => {
+    // Used by the host's health check. It reveals nothing about the data.
+    if (req.url === "/health") {
+      res.writeHead(200).end("ok");
+      return;
+    }
     if (req.url !== "/mcp") {
       res.writeHead(404).end("not found");
       return;

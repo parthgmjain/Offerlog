@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: pipeline-mcp
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm ci && npm run build
+    startCommand: node dist/serve.js
+    healthCheckPath: /health
+    envVars:
+      - key: SKIP_MIGRATE
+        value: "true"
+      - key: PIPELINE_POLICY
+        value: /etc/secrets/policy.json
+      - key: DATABASE_URL
+        sync: false
+    # The policy file is added as a Secret File named policy.json in the Render dashboard.

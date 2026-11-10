@@ -32,7 +32,13 @@ async function handle<T>(run: () => Promise<T>) {
 }
 
 export function createServer(ctx: CallContext): McpServer {
-  const server = new McpServer({ name: "pipeline", version: "0.1.0" });
+  const server = new McpServer(
+    { name: "pipeline", version: "0.1.0" },
+    {
+      instructions:
+        "If a call fails with a timeout or connection error, the server may be waking up from sleep. Wait about a minute, then retry the same call once.",
+    },
+  );
 
   server.registerTool(
     "add_application",
