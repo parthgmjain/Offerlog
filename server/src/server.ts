@@ -4,12 +4,13 @@ import {
   addApplication,
   getApplication,
   listApplications,
+  updateApplication,
   updateStatus,
   upcomingFollowups,
 } from "./applications.js";
 import { guardedCall, type CallContext } from "./gate.js";
 import { draftFollowup } from "./followup.js";
-import { addContact, addNote, contactsFor } from "./records.js";
+import { addContact, addNote, applicationDetail, contactsFor } from "./records.js";
 import { STATUSES } from "./status.js";
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "use YYYY-MM-DD");
@@ -73,6 +74,31 @@ export function createServer(ctx: CallContext): McpServer {
       handle(() =>
         guardedCall(ctx, "update_status", args, async () => {
           const { before, after } = await updateStatus(ctx.db, ctx.userId, args.id, args.status);
+          return { result: after, before, after };
+        }),
+      ),
+  );
+
+  server.registerTool(
+    "update_application",
+    {
+      description:
+        "Correct the details of an application: company, role, link, dates, or resume and cover letter versions. Pass only the fields to change. To change status, use update_status.",
+      inputSchema: {
+        id: z.number().int().positive(),
+        company: z.string().min(1).optional(),
+        role: z.string().min(1).optional(),
+        link: z.string().url().nullable().optional(),
+        date_applied: isoDate.optional(),
+        resume_version: z.string().nullable().optional(),
+        cover_letter_version: z.string().nullable().optional(),
+      },
+    },
+    (args) =>
+      handle(() =>
+        guardedCall(ctx, "update_application", args, async () => {
+          const { id, ...patch } = args;
+          const { before, after } = await updateApplication(ctx.db, ctx.userId, id, patch);
           return { result: after, before, after };
         }),
       ),
@@ -182,13 +208,13 @@ export function createServer(ctx: CallContext): McpServer {
   server.registerTool(
     "get_application",
     {
-      description: "Get full details for one application by id.",
+      description: "Get full details for one application by id, including its notes and contacts.",
       inputSchema: { id: z.number().int().positive() },
     },
     (args) =>
       handle(() =>
         guardedCall(ctx, "get_application", args, async () => ({
-          result: await getApplication(ctx.db, ctx.userId, args.id),
+          result: await applicationDetail(ctx.db, ctx.userId, args.id),
         })),
       ),
   );

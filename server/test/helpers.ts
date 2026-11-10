@@ -16,7 +16,7 @@ export const testPolicy: Policy = {
     writer: {
       rules: [
         { id: "read", tools: ["list_applications", "get_application"] },
-        { id: "write", tools: ["add_application", "update_status"] },
+        { id: "write", tools: ["add_application", "update_application", "update_status"] },
       ],
     },
     reader: {

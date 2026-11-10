@@ -73,3 +73,21 @@ export async function contactsFor(db: Db, userId: string, applicationId: number)
   );
   return rows;
 }
+
+export async function notesFor(db: Db, userId: string, applicationId: number): Promise<Note[]> {
+  const { rows } = await db.query<Note>(
+    `SELECT * FROM notes WHERE user_id = $1 AND application_id = $2 ORDER BY id ASC`,
+    [userId, applicationId],
+  );
+  return rows;
+}
+
+/** One application with its notes and contacts. Throws if it is not the user's. */
+export async function applicationDetail(db: Db, userId: string, id: number) {
+  const app = await getApplication(db, userId, id);
+  const [notes, contacts] = await Promise.all([
+    notesFor(db, userId, id),
+    contactsFor(db, userId, id),
+  ]);
+  return { ...app, notes, contacts };
+}

@@ -123,6 +123,55 @@ function shiftDate(date: string, days: number): string {
   return shifted.toISOString().slice(0, 10);
 }
 
+/** Fields a user can correct. Status has its own tool, because it follows transition rules. */
+export interface ApplicationPatch {
+  company?: string;
+  role?: string;
+  link?: string | null;
+  date_applied?: string;
+  resume_version?: string | null;
+  cover_letter_version?: string | null;
+}
+
+const EDITABLE_FIELDS = [
+  "company",
+  "role",
+  "link",
+  "date_applied",
+  "resume_version",
+  "cover_letter_version",
+] as const;
+const REQUIRED_FIELDS: readonly string[] = ["company", "role", "date_applied"];
+
+export async function updateApplication(
+  db: Db,
+  userId: string,
+  id: number,
+  patch: ApplicationPatch,
+): Promise<{ before: Application; after: Application }> {
+  const before = await getApplication(db, userId, id);
+  const fields = EDITABLE_FIELDS.filter((field) => patch[field] !== undefined);
+  if (fields.length === 0) {
+    throw new Error("nothing to update: give at least one field to change");
+  }
+  for (const field of fields) {
+    if (REQUIRED_FIELDS.includes(field) && patch[field] === null) {
+      throw new Error(`${field} cannot be cleared`);
+    }
+  }
+
+  const values: unknown[] = fields.map((field) => patch[field] ?? null);
+  const assignments = fields.map((field, i) => `${field} = $${i + 1}`);
+  values.push(new Date().toISOString(), id, userId);
+  const n = fields.length;
+  await db.query(
+    `UPDATE applications SET ${assignments.join(", ")}, updated_at = $${n + 1}
+     WHERE id = $${n + 2} AND user_id = $${n + 3}`,
+    values,
+  );
+  return { before, after: await getApplication(db, userId, id) };
+}
+
 export async function updateStatus(
   db: Db,
   userId: string,

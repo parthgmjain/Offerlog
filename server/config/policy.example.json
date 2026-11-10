@@ -3,7 +3,7 @@
     "claude-desktop": {
       "rules": [
         { "id": "read", "tools": ["list_applications", "get_application", "upcoming_followups", "draft_followup"] },
-        { "id": "write", "tools": ["add_application", "update_status", "add_note", "add_contact"] }
+        { "id": "write", "tools": ["add_application", "update_application", "update_status", "add_note", "add_contact"] }
       ]
     },
     "read-only-demo": {
