@@ -15,7 +15,8 @@ Tracking dozens of applications across job sites, notes, and spreadsheets gets m
 | `add_application` | Log a new application: company, role, link, date applied, resume and cover letter version, status |
 | `update_status` | Move an application forward (applied → interviewing → offer), or to rejected or withdrawn. No backward moves. |
 | `list_applications` | List applications, filtered by status, company, or date range |
-| `get_application` | Show full details for one application |
+| `update_application` | Correct an application's company, role, link, dates, or resume and cover letter versions. Status changes use `update_status`. Before and after values are logged. |
+| `get_application` | Show full details for one application, including its notes and contacts |
 | `upcoming_followups` | List applications still at `applied` that are at least N days old (default 7) |
 | `add_note` | Attach a note to an application. The note text is redacted in the audit log. |
 | `add_contact` | Attach a recruiter or referral contact. The name, email, and phone are redacted in the audit log. |
