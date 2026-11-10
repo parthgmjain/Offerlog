@@ -6,7 +6,7 @@ const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL ?? "postgres://localhost
 /** Gives each test an empty schema: drops the tables, then migrates again. */
 export async function freshDb(): Promise<Db> {
   const db = openDb(TEST_DATABASE_URL);
-  await db.query("DROP TABLE IF EXISTS audit_log, contacts, notes, applications CASCADE");
+  await db.query("DROP TABLE IF EXISTS audit_log, contacts, notes, api_keys, applications CASCADE");
   await migrate(db);
   return db;
 }

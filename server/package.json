@@ -10,7 +10,9 @@
     "test": "vitest run",
     "build": "tsc",
     "start": "tsx src/index.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "serve": "tsx src/serve.ts",
+    "key:create": "tsx src/create-key.ts"
   },
   "keywords": [],
   "author": "",

@@ -40,6 +40,16 @@ const SCHEMA = `
     created_at TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS api_keys (
+    id SERIAL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    policy_client TEXT NOT NULL,
+    key_hash TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL,
+    revoked_at TEXT
+  );
+
   CREATE TABLE IF NOT EXISTS audit_log (
     id SERIAL PRIMARY KEY,
     user_id TEXT NOT NULL,
