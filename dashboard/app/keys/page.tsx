@@ -7,43 +7,79 @@ import { getDashboardPool } from "@/lib/db";
 import { KeyForm } from "./key-form";
 import { revokeKeyAction } from "./actions";
 
-export default function KeysPage() {
+export default function KeysPage({ searchParams }: PageProps<"/keys">) {
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-10 font-sans text-zinc-800 dark:text-zinc-200">
       <header className="mb-8">
-        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Pipeline</p>
-        <h1 className="mt-1 text-3xl font-semibold text-zinc-900 dark:text-zinc-100">API keys</h1>
+        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+          Pipeline
+        </p>
+        <h1 className="mt-1 text-3xl font-semibold text-zinc-900 dark:text-zinc-100">
+          API keys
+        </h1>
         <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          A key lets one Claude connection read and write your job tracker. Use one key per device, and revoke any you no
-          longer use.
+          A key lets one Claude connection read and write your job tracker. Use
+          one key per device, and revoke any you no longer use.
         </p>
         <nav className="mt-4 flex gap-5 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-          <Link href="/audit" className="underline underline-offset-4 hover:text-zinc-900 dark:hover:text-zinc-100">Audit log</Link>
-          <Link href="/setup" className="underline underline-offset-4 hover:text-zinc-900 dark:hover:text-zinc-100">Setup guide</Link>
-          <a href="/auth/logout" className="underline underline-offset-4 hover:text-zinc-900 dark:hover:text-zinc-100">Sign out</a>
+          <Link
+            href="/audit"
+            className="underline underline-offset-4 hover:text-zinc-900 dark:hover:text-zinc-100"
+          >
+            Audit log
+          </Link>
+          <Link
+            href="/setup"
+            className="underline underline-offset-4 hover:text-zinc-900 dark:hover:text-zinc-100"
+          >
+            Setup guide
+          </Link>
+          <a
+            href="/auth/logout"
+            className="underline underline-offset-4 hover:text-zinc-900 dark:hover:text-zinc-100"
+          >
+            Sign out
+          </a>
         </nav>
       </header>
 
       <div className="mb-8 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Create a key</h2>
+        <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+          Create a key
+        </h2>
         <KeyForm />
       </div>
 
-      <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Your keys</h2>
-      <Suspense fallback={<p className="text-sm text-zinc-500">Loading keys…</p>}>
-        <KeyList />
+      <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+        Your keys
+      </h2>
+      <Suspense
+        fallback={<p className="text-sm text-zinc-500">Loading keys…</p>}
+      >
+        <KeyList searchParams={searchParams} />
       </Suspense>
     </main>
   );
 }
 
-async function KeyList() {
+async function KeyList({
+  searchParams,
+}: {
+  searchParams: Promise<{ show?: string | string[] }>;
+}) {
   const session = await auth0.getSession();
   if (!session) {
     redirect("/auth/login");
   }
 
-  const keys: ApiKeyRow[] = await listKeys(getDashboardPool(), session.user.sub);
+  const showRevoked = (await searchParams).show === "revoked";
+  const keys: ApiKeyRow[] = await listKeys(
+    getDashboardPool(),
+    session.user.sub,
+  );
+  const revokedCount = keys.filter((key) => key.revoked_at).length;
+  const visible = showRevoked ? keys : keys.filter((key) => !key.revoked_at);
+
   if (keys.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-zinc-300 p-5 text-sm text-zinc-500 dark:border-zinc-700">
@@ -52,33 +88,73 @@ async function KeyList() {
     );
   }
 
+  const toggle =
+    revokedCount > 0 ? (
+      <p className="mt-3 text-sm">
+        {showRevoked ? (
+          <Link
+            href="/keys"
+            className="font-medium text-zinc-700 underline underline-offset-4 dark:text-zinc-300"
+          >
+            Hide revoked keys
+          </Link>
+        ) : (
+          <Link
+            href="/keys?show=revoked"
+            className="font-medium text-zinc-700 underline underline-offset-4 dark:text-zinc-300"
+          >
+            Show {revokedCount} revoked {revokedCount === 1 ? "key" : "keys"}
+          </Link>
+        )}
+      </p>
+    ) : null;
+
+  if (visible.length === 0) {
+    return (
+      <>
+        <p className="rounded-xl border border-dashed border-zinc-300 p-5 text-sm text-zinc-500 dark:border-zinc-700">
+          All of your keys are revoked. Create a new one above to connect again.
+        </p>
+        {toggle}
+      </>
+    );
+  }
+
   return (
-    <ul className="divide-y divide-zinc-200 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
-      {keys.map((key) => (
-        <li key={key.id} className="flex items-center justify-between gap-4 px-5 py-4 text-sm">
-          <div>
-            <p className="font-medium text-zinc-900 dark:text-zinc-100">{key.name}</p>
-            <p className="mt-0.5 text-xs text-zinc-500">
-              created {key.created_at} · {key.policy_client}
-            </p>
-          </div>
-          {key.revoked_at ? (
-            <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-              revoked
-            </span>
-          ) : (
-            <form action={revokeKeyAction}>
-              <input type="hidden" name="id" value={key.id} />
-              <button
-                type="submit"
-                className="rounded-md border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
-              >
-                Revoke
-              </button>
-            </form>
-          )}
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="divide-y divide-zinc-200 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
+        {visible.map((key) => (
+          <li
+            key={key.id}
+            className="flex items-center justify-between gap-4 px-5 py-4 text-sm"
+          >
+            <div>
+              <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                {key.name}
+              </p>
+              <p className="mt-0.5 text-xs text-zinc-500">
+                created {key.created_at} · {key.policy_client}
+              </p>
+            </div>
+            {key.revoked_at ? (
+              <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                revoked
+              </span>
+            ) : (
+              <form action={revokeKeyAction}>
+                <input type="hidden" name="id" value={key.id} />
+                <button
+                  type="submit"
+                  className="rounded-md border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+                >
+                  Revoke
+                </button>
+              </form>
+            )}
+          </li>
+        ))}
+      </ul>
+      {toggle}
+    </>
   );
 }
