@@ -26,15 +26,17 @@ const filters: { label: string; value: Decision | undefined }[] = [
 
 export default function AuditPage({ searchParams }: PageProps<"/audit">) {
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-8 font-sans">
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold text-zinc-900">Audit log</h1>
-        <p className="mt-1 text-sm text-zinc-600">
+    <main className="mx-auto w-full max-w-6xl px-4 py-10 font-sans text-zinc-800 dark:text-zinc-200">
+      <header className="mb-8">
+        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Pipeline</p>
+        <h1 className="mt-1 text-3xl font-semibold text-zinc-900 dark:text-zinc-100">Audit log</h1>
+        <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
           Every tool call made against the job tracker, newest first. This page is read-only.
         </p>
-        <nav className="mt-2 flex gap-4 text-sm text-zinc-600">
-          <Link href="/keys" className="underline">API keys</Link>
-          <a href="/auth/logout" className="underline">Sign out</a>
+        <nav className="mt-4 flex gap-5 text-sm font-medium text-zinc-600 dark:text-zinc-400">
+          <Link href="/keys" className="underline underline-offset-4 hover:text-zinc-900 dark:hover:text-zinc-100">API keys</Link>
+          <Link href="/setup" className="underline underline-offset-4 hover:text-zinc-900 dark:hover:text-zinc-100">Setup guide</Link>
+          <a href="/auth/logout" className="underline underline-offset-4 hover:text-zinc-900 dark:hover:text-zinc-100">Sign out</a>
         </nav>
       </header>
 
