@@ -4,9 +4,11 @@ import {
   addApplication,
   getApplication,
   listApplications,
+  updateApplication,
   updateStatus,
   upcomingFollowups,
 } from "../src/applications.js";
+import { applicationDetail } from "../src/records.js";
 import { freshDb } from "./helpers.js";
 
 let db: Db;
@@ -61,6 +63,9 @@ describe("applications", () => {
     expect(await listApplications(db, "u2")).toEqual([]);
     await expect(getApplication(db, "u2", app.id)).rejects.toThrow(/not found/);
     await expect(updateStatus(db, "u2", app.id, "rejected")).rejects.toThrow(/not found/);
+    await expect(updateApplication(db, "u2", app.id, { role: "Hacked" })).rejects.toThrow(/not found/);
+    await expect(applicationDetail(db, "u2", app.id)).rejects.toThrow(/not found/);
+    expect((await getApplication(db, "u1", app.id)).role).toBe("Engineer");
   });
 
   describe("upcomingFollowups", () => {
